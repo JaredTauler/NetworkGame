@@ -4,7 +4,6 @@ import pygame.font as pgfont
 from function import *
 import math
 
-
 def SurfCenter(s1, s2):
     return (
         s1.get_rect().center[0] - s2.get_rect().center[0],
@@ -36,7 +35,7 @@ class ClassButton():
         self.font =font
 
 
-    def update(self, screen, input):
+    def update(self, screen, Input):
         def FadeMath(color):
             if self.fadeindex != 0:
                 h = RangeChange(
@@ -57,7 +56,7 @@ class ClassButton():
 
         Return = False
         if MouseOver(self.rect):
-            for i in input.get("mouse"):
+            for i in Input.get("mouse"):
                 if i.__dict__.get("button") == 1:
                     return self.trigger
             if self.fadeindex < self.fade:
@@ -103,7 +102,7 @@ class MainMenu:
             "antialias": True,
         }
         self.elem["host"] = ClassButton(
-            (200, 80), (100, 32), render, font, trigger="host"
+            (200, 100), (100, 0), render, font, trigger="host"
         )
 
         render = {
@@ -112,7 +111,7 @@ class MainMenu:
             "antialias": True,
         }
         self.elem["join"] = ClassButton(
-            (400, 300), (100, 400), render, font, trigger="join"
+            (200, 100), (100, 100), render, font, trigger="join"
         )
 
         render = {
@@ -120,8 +119,8 @@ class MainMenu:
             "color": (255, 255, 255),
             "antialias": True,
         }
-        self.elem["join"] = ClassButton(
-            (400, 300), (100, 400), render, font, trigger="options"
+        self.elem["options"] = ClassButton(
+            (400, 100), (100, 200), render, font, trigger="options"
         )
 
         render = {
@@ -129,14 +128,14 @@ class MainMenu:
             "color": (255, 255, 255),
             "antialias": True,
         }
-        self.elem["join"] = ClassButton(
-            (400, 300), (100, 400), render, font, trigger="exit"
+        self.elem["exit"] = ClassButton(
+            (200, 100), (100, 300), render, font, trigger="exit"
         )
 
-    def update(self, screen, group, input):
+    def update(self, screen, group, Input):
         screen.surf.fill([121, 100, 100])
         for e in self.elem.values():
-            act = e.update(screen, input)
+            act = e.update(screen, Input)
             if act != None:
                 if act == "join":
                     group["gui"][0] = JoinMenu(screen) # replace self with join menu
