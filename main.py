@@ -46,7 +46,7 @@ PLAYAREA = [ClassPlayArea((1000, 1000))]
 from gui import * # Have to import after i declare constants.
 
 # Initial GUI menu.
-GROUP["gui"][0] = ClassMenu(PLAYAREA[0])
+GROUP["gui"][0] = MainMenu(PLAYAREA[0])
 while True:
     input = EventHandle()
 
@@ -55,7 +55,7 @@ while True:
     # Update Everything.
     for g in GROUP.values():
         for obj in g.values():
-            obj.update(PLAYAREA[0], input)
+            obj.update(PLAYAREA[0], GROUP, input)
 
     SCREEN.blit(PLAYAREA[0].surf, (0,0))
     pg.display.set_caption(str(CLOCK.get_fps()))

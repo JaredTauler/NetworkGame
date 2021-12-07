@@ -89,7 +89,7 @@ class ClassButton():
         screen.surf.blit(self.surf, self.rect)
 
 
-class ClassMenu:
+class MainMenu:
     def __init__(self, screen):
         # self.surf = pg.Surface(surf)
         # self.rect = self.surf.get_rect()
@@ -97,17 +97,81 @@ class ClassMenu:
 
         font = pg.font.SysFont("calibri", 100)
 
-        render = {}
-        render["text"] = "Host"
-        render["color"] = (255, 255, 255)
-        render["antialias"] = True
+        render = {
+            "text": "Host",
+            "color": (255, 255, 255),
+            "antialias": True,
+        }
+        self.elem["host"] = ClassButton(
+            (200, 80), (100, 32), render, font, trigger="host"
+        )
+
+        render = {
+            "text": "Join",
+            "color": (255, 255, 255),
+            "antialias": True,
+        }
+        self.elem["join"] = ClassButton(
+            (400, 300), (100, 400), render, font, trigger="join"
+        )
+
+        render = {
+            "text": "Options",
+            "color": (255, 255, 255),
+            "antialias": True,
+        }
+        self.elem["join"] = ClassButton(
+            (400, 300), (100, 400), render, font, trigger="options"
+        )
+
+        render = {
+            "text": "Exit",
+            "color": (255, 255, 255),
+            "antialias": True,
+        }
+        self.elem["join"] = ClassButton(
+            (400, 300), (100, 400), render, font, trigger="exit"
+        )
+
+    def update(self, screen, group, input):
+        screen.surf.fill([121, 100, 100])
+        for e in self.elem.values():
+            act = e.update(screen, input)
+            if act != None:
+                if act == "join":
+                    group["gui"][0] = JoinMenu(screen) # replace self with join menu
+                    return
+
+class JoinMenu:
+    def __init__(self, screen):
+        # self.surf = pg.Surface(surf)
+        # self.rect = self.surf.get_rect()
+        self.elem = {}
+
+        font = pg.font.SysFont("calibri", 100)
+
+        render = {
+            "text": "Hi",
+            "color": (255, 255, 255),
+            "antialias": True,
+        }
         self.elem["host"] = ClassButton(
             (400, 300), (100, 32), render, font, trigger="host"
         )
 
-    def update(self, screen, input):
+        render = {
+            "text": "Join",
+            "color": (255, 255, 255),
+            "antialias": True,
+        }
+        self.elem["join"] = ClassButton(
+            (400, 300), (100, 400), render, font, trigger="join"
+        )
+
+    def update(self, screen, group, input):
         screen.surf.fill([121, 100, 100])
         for e in self.elem.values():
-            if e.update(screen, input) == "host":
-                print("HOST")
-
+            act = e.update(screen, input)
+            if act != None:
+                if act == "join":
+                    pass
