@@ -3,15 +3,16 @@ import pygame.font as pgfont
 from function import *
 import math
 
-class Player:
+class Player(pg.sprite.Sprite):
 	def __init__(self, screen):
+		pg.sprite.Sprite.__init__(self)
 		self.surf = pg.Surface((20, 20))
 		self.rect = self.surf.get_rect()
 		self.rect.center = screen.rect.center
 
 		pg.draw.rect(self.surf, (255, 0, 0), self.surf.get_rect())
 
-		self.location = (500, -200)
+		self.location = (500, -100)
 		self.velocity = {"x": 0, "y": 0}
 
 	def update(self, screen, group, input):
@@ -39,25 +40,6 @@ class Player:
 		# Calculate Velocity
 		self.velocity["x"] = self.velocity["x"] + (Dir["x"] / 4)
 		self.velocity["y"] = self.velocity["y"] + (Dir["y"] / 4)
-		# # Calculate next position.
-		# newloc = (
-		# 	self.location[0] + (self.velocity["x"]),
-		# 	self.location[1] + (self.velocity["y"])
-		# )
-		# # Move to calculated new position
-		# self.location = (
-		# 	newloc[0],
-		# 	newloc[1]
-		# )
-		#
-		#
-		# # a = SubTuple(self.rect, newloc)
-		# # Update camera location
-		# # screen.location = (
-		# # 	self.rect[0] - newloc[0],
-		# # 	self.rect[1] + newloc[1]
-		# # )
-		# screen.location(0,0)
 
 		# Calculate next position.
 		newloc = (
@@ -65,23 +47,19 @@ class Player:
 			self.location[1] + (self.velocity["y"])
 		)
 		# Move to calculated new position
-		self.location = (newloc)
-		self.rect = ToWorld(screen.location, self.location)
+		self.location = newloc
+		self.rect[0], self.rect[1] = ToWorld(screen.location, self.location)
 
 
-		# a = SubTuple(self.rect, newloc)
 		# Update camera location
-		# screen.location = (
-		# 	self.rect[0] - newloc[0],
-		# 	self.rect[1] + newloc[1]
-		# )
+		pg.display.set_caption(str(screen.location))
 		screen.location = (
-			self.rect[0],
-			self.rect[1]
+			-newloc[0] + screen.rect.center[0],
+			newloc[1]+ screen.rect.center[1]
 		)
-		screen.location = newloc
-		print(screen.location)
-		# print(newloc[0], self.rect[0], self.rect[1], newloc[1])
+		print(pg.surfarray.pixels2d(self.surf))
+		# print(geometry.collide())
+
 
 def ToWorld(a, b):
 	return (
@@ -98,7 +76,7 @@ class Tile():
 	def update(self, screen, group, input):
 		# print(self.rect)
 		self.rect = ToWorld(screen.location, self.location)
-		# print(self.location, group["player"][0].location, screen.location)
+		print(self.location, group["player"][0].location, screen.location)
 
 class Game:
 	def __init__(self, screen):
