@@ -22,6 +22,32 @@ class WorldRect():
 	def bottom(self):
 		return self.y + self.h
 
+def CollideWorldRect(rect1: WorldRect, rect2: WorldRect):
+	# Determine if a collision is happening
+	if (
+		rect1.x < rect2.x + rect2.w and
+		rect1.x + rect1.w > rect2.x and
+		rect1.y < rect2.y + rect2.h and
+		rect1.h + rect1.y > rect2.y
+	):
+		# OK. collision is happening, which side is closest?
+		side = {
+			"left": abs(rect1.right() - rect2.left()), # left
+			"top": abs(rect1.bottom() - rect2.top()), # top
+			"right": abs(rect1.left() - rect2.right()), # right
+			"bottom": abs(rect1.top() - rect2.bottom()) # bottom
+		}
+
+		# Determine which is closest just by comparing
+		closest = "top"
+		for i in side.keys():
+			if side[i] < side[closest]:
+				closest = i
+		print(closest)
+		return closest, rect2
+
+	return None, None
+
 class Player(pg.sprite.Sprite):
 	def __init__(self, screen):
 		pg.sprite.Sprite.__init__(self)
@@ -61,26 +87,26 @@ class Player(pg.sprite.Sprite):
 
 		# Calculate Velocity and gravity
 		self.velocity["x"] = self.velocity["x"] + (Dir["x"] / 4)
-		# self.velocity["y"] = self.velocity["y"] + (Dir["y"] / 4)
+		self.velocity["y"] = self.velocity["y"] + (Dir["y"] / 4)
 
-		# Jumping off ground
-		if pg.key.get_pressed()[key["up"]] and self.floored:
-			print("BRUH")
-			self.jumping = True
-			self.velocity["y"] = -1
-			self.jumpframes = 0
-		# Jumping while not touching the ground
-		elif pg.key.get_pressed()[key["up"]] and self.jumpframes != self.jumpmax and self.jumping:
-			self.velocity["y"] += -3*self.jumpframes
-			self.jumpframes += 1
-		# If falling
-		else:
-			# self.jumping = False
-			self.velocity["y"] += 1
-			self.air += 1
-
-		# Apply velocity
-		self.velocity["y"] = clamp(self.velocity["y"] + (1 / 60)/2, -15, 15)
+		# # Jumping off ground
+		# if pg.key.get_pressed()[key["up"]] and self.floored:
+		# 	print("BRUH")
+		# 	self.jumping = True
+		# 	self.velocity["y"] = -1
+		# 	self.jumpframes = 0
+		# # Jumping while not touching the ground
+		# elif pg.key.get_pressed()[key["up"]] and self.jumpframes != self.jumpmax and self.jumping:
+		# 	self.velocity["y"] += -3*self.jumpframes
+		# 	self.jumpframes += 1
+		# # If falling
+		# else:
+		# 	# self.jumping = False
+		# 	self.velocity["y"] += 1
+		# 	self.air += 1
+		#
+		# # Apply velocity
+		# self.velocity["y"] = clamp(self.velocity["y"] + (1 / 60)/2, -15, 15)
 
 		# Calculate next position.
 		newloc = self.location
@@ -89,35 +115,17 @@ class Player(pg.sprite.Sprite):
 			self.location.y + (self.velocity["y"])
 		)
 
-		# TODO clean this mess up!!
-		def collide(obj1, obj2):
-			rect1 = newloc
-			rect2 = obj2.location
-			# Determine if a collision is happening
-			if (
-				rect1.x < rect2.x + rect2.w and
-				rect1.x + rect1.w > rect2.x and
-				rect1.y < rect2.y + rect2.h and
-				rect1.h + rect1.y > rect2.y
-			):
-				# OK. collision is happening, which side is closest?
-				side = {
-					"left": abs(newloc.right() - obj2.location.left()), # left
-					"top": abs(newloc.bottom() - obj2.location.top()), # top
-					"right": abs(newloc.left() - obj2.location.right()), # right
-					"bottom": abs(newloc.top() - obj2.location.bottom()) # bottom
-				}
-
-				# Determine which is closest just by comparing
-				closest = "top"
-				for i in side.keys():
-					if side[i] < side[closest]:
-						closest = i
-
+		self.floored = False
+		for i in group["world"]:
+			closest, rect2 = CollideWorldRect(newloc, i.location)
+			if closest is not None:
+				print("BRUUUUUH")
 				if closest == "top":
+					print(newloc.y)
 					newloc.y = rect2.y - newloc.h
 					self.velocity["y"] = 0
 					self.floored = True
+					print(newloc.y)
 
 				elif closest == "bottom":
 					newloc.y = rect2.bottom()
@@ -130,10 +138,6 @@ class Player(pg.sprite.Sprite):
 				elif closest == "right":
 					newloc.x = rect2.x + rect2.h
 					self.velocity["x"] = 0
-
-		self.floored = False
-		for i in group["world"]:
-			collide(self, i)
 
 		# Move to calculated new position
 
@@ -180,8 +184,8 @@ class Game:
 		self.group["world"] = []
 		# self.group["world"].append(Tile((100, 100), (0,0)))
 		self.group["world"].append(Tile((100, 100), (100, 100)))
-		self.group["world"].append(Tile((100, 100), (100, 300)))
-		self.group["world"].append(Tile((100, 100), (300, 300)))
+		# self.group["world"].append(Tile((100, 100), (100, 300)))
+		# self.group["world"].append(Tile((100, 100), (300, 300)))
 
 
 
