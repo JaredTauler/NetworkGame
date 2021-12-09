@@ -2,7 +2,25 @@ import pygame as pg
 import pygame.font as pgfont
 from function import *
 import math
-import os
+
+class WorldRect():
+	def __init__(self, xy, wh):
+		self.x, self.y = xy
+		if type(wh) is pg.Rect:
+			self.w, self.h = wh.w, wh.h
+		else:
+			self.w, self.h = wh
+
+	def xy(self):
+		return self.x, self.y
+	def left(self):
+		return self.x
+	def right(self):
+		return self.x + self.w
+	def top(self):
+		return self.y
+	def bottom(self):
+		return self.y + self.h
 
 class Player(pg.sprite.Sprite):
 	def __init__(self, screen):
@@ -13,8 +31,14 @@ class Player(pg.sprite.Sprite):
 
 		pg.draw.rect(self.surf, (255, 0, 0), self.surf.get_rect())
 
-		self.location = (500, 200)
+		self.location = WorldRect((100, -10),(self.rect))
 		self.velocity = {"x": 0, "y": 0}
+
+		self.jumping = False
+		self.jumpframes = 0
+		self.jumpmax = 20
+		self.floored = False
+		self.air = 0
 
 	def update(self, screen, group, input):
 		key = {"left": 97, "up": 119, "down": 115, "right": 100}
@@ -24,79 +48,112 @@ class Player(pg.sprite.Sprite):
 		if pg.key.get_pressed()[key["right"]]:
 			Dir["x"] = 1
 		if pg.key.get_pressed()[key["up"]]:
-			Dir["y"] = 1
-		if pg.key.get_pressed()[key["down"]]:
 			Dir["y"] = -1
+		if pg.key.get_pressed()[key["down"]]:
+			Dir["y"] = 1
 
 		# Friction
 		self.velocity["x"] *= .96
-		self.velocity["y"] *= .96
 
 		# Will endlessly multiply little tiny floats that make the player move when they shouldnt be.
 		if round(self.velocity["x"], 1) == 0:
 			self.velocity["x"] = 0
-		if round(self.velocity["y"], 1) == 0:
-			self.velocity["y"] = 0
 
-		# Calculate Velocity
+		# Calculate Velocity and gravity
 		self.velocity["x"] = self.velocity["x"] + (Dir["x"] / 4)
-		self.velocity["y"] = self.velocity["y"] + (Dir["y"] / 4)
+		# self.velocity["y"] = self.velocity["y"] + (Dir["y"] / 4)
+
+		# Jumping off ground
+		if pg.key.get_pressed()[key["up"]] and self.floored:
+			print("BRUH")
+			self.jumping = True
+			self.velocity["y"] = -1
+			self.jumpframes = 0
+		# Jumping while not touching the ground
+		elif pg.key.get_pressed()[key["up"]] and self.jumpframes != self.jumpmax and self.jumping:
+			self.velocity["y"] += -3*self.jumpframes
+			self.jumpframes += 1
+		# If falling
+		else:
+			# self.jumping = False
+			self.velocity["y"] += 1
+			self.air += 1
+
+		# Apply velocity
+		self.velocity["y"] = clamp(self.velocity["y"] + (1 / 60)/2, -15, 15)
 
 		# Calculate next position.
-		newloc = (
-			self.location[0] + (self.velocity["x"]),
-			self.location[1] + (self.velocity["y"])
+		newloc = self.location
+		newloc.x, newloc.y  = (
+			self.location.x + (self.velocity["x"]),
+			self.location.y + (self.velocity["y"])
 		)
 
-		# Collision (evil)
-		# Use location in the world, not rect location. rect location is for drawing only.
-		# AABB collision: only rectangles.
-		def parse(n):
-			rect = {
-				"x": n.location[0], "y": n.location[1],
-				"w": n.rect[2], "h": n.rect[3]
-			}
-			side = {}
-			side["left"] = rect["x"] # x
-			side["right"] = rect['x'] + rect['w'] # x + width
-			side["top"] = rect['y'] # y
-			side["bottom"] = rect['y'] + rect['h']
-			return rect, side
-		rect1, side1 =  parse(self)
-		rect2, side2 =  parse(group["world"][0])
-		os.system('cls')
-		print(rect1, rect2)
-		print(rect1["x"] < rect2["x"] + rect2["w"],
-			  rect1["x"] + rect1["w"] > rect2["x"],
-			  rect1["y"] < rect2["y"] + rect2["h"],
-			  rect1["y"] + rect1["h"] > rect2["y"]
+		# TODO clean this mess up!!
+		def collide(obj1, obj2):
+			rect1 = newloc
+			rect2 = obj2.location
+			# Determine if a collision is happening
+			if (
+				rect1.x < rect2.x + rect2.w and
+				rect1.x + rect1.w > rect2.x and
+				rect1.y < rect2.y + rect2.h and
+				rect1.h + rect1.y > rect2.y
+			):
+				# OK. collision is happening, which side is closest?
+				side = {
+					"left": abs(newloc.right() - obj2.location.left()), # left
+					"top": abs(newloc.bottom() - obj2.location.top()), # top
+					"right": abs(newloc.left() - obj2.location.right()), # right
+					"bottom": abs(newloc.top() - obj2.location.bottom()) # bottom
+				}
 
-		)
-		# print(a["left"] >= b["right"])
+				# Determine which is closest just by comparing
+				closest = "top"
+				for i in side.keys():
+					if side[i] < side[closest]:
+						closest = i
 
-		# print(a, b)
+				if closest == "top":
+					newloc.y = rect2.y - newloc.h
+					self.velocity["y"] = 0
+					self.floored = True
+
+				elif closest == "bottom":
+					newloc.y = rect2.bottom()
+					self.velocity["y"] = 0
 
 
+				elif closest == "left":
+					newloc.x = rect2.x - newloc.w
+					self.velocity["x"] = 0
+				elif closest == "right":
+					newloc.x = rect2.x + rect2.h
+					self.velocity["x"] = 0
+
+		self.floored = False
+		for i in group["world"]:
+			collide(self, i)
 
 		# Move to calculated new position
+
 		self.location = newloc
-		self.rect[0], self.rect[1] = ToWorld(screen.location, self.location)
+		self.rect[0], self.rect[1] = ToWorld(screen.location, self.location.xy())
 
 
 		# Update camera location
 		pg.display.set_caption(str(screen.location))
 		screen.location = (
-			-newloc[0] + screen.rect.center[0],
-			newloc[1]+ screen.rect.center[1]
+			-newloc.x + screen.rect.center[0],
+			-newloc.y + screen.rect.center[1]
 		)
-		# print(pg.surfarray.pixels2d(self.surf))
 		# print(geometry.collide())
 
 
 def ToWorld(a, b):
 	return (
 		a[0] + b[0],
-		a[1] - b[1]
+		a[1] + b[1]
 	)
 
 class Tile(pg.sprite.Sprite):
@@ -104,11 +161,11 @@ class Tile(pg.sprite.Sprite):
 		pg.sprite.Sprite.__init__(self)
 		self.surf = pg.Surface(size)
 		self.rect = self.surf.get_rect()
-		self.location = loc
+		self.location = WorldRect(loc, self.rect)
 
 	def update(self, screen, group, input):
 		# print(self.rect)
-		self.rect[0], self.rect[1] = ToWorld(screen.location, self.location)
+		self.rect[0], self.rect[1] = ToWorld(screen.location, self.location.xy())
 		# print(self.location, group["player"][0].location, screen.location)
 
 class Game:
@@ -122,7 +179,9 @@ class Game:
 
 		self.group["world"] = []
 		# self.group["world"].append(Tile((100, 100), (0,0)))
-		self.group["world"].append(Tile((100, 100), (500, 200)))
+		self.group["world"].append(Tile((100, 100), (100, 100)))
+		self.group["world"].append(Tile((100, 100), (100, 300)))
+		self.group["world"].append(Tile((100, 100), (300, 300)))
 
 
 
