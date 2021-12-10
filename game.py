@@ -1,13 +1,17 @@
 import pygame as pg
 import pygame.font as pgfont
+
+import client
+import server
 from function import *
 import math
+import copy
 
 class WorldRect():
 	def __init__(self, xy, wh):
-		self.x, self.y = xy
+		self.x, self.y = copy.copy(xy)
 		if type(wh) is pg.Rect:
-			self.w, self.h = wh.w, wh.h
+			self.w, self.h = copy.copy(wh.w), copy.copy(wh.h)
 		else:
 			self.w, self.h = wh
 
@@ -22,13 +26,14 @@ class WorldRect():
 	def bottom(self):
 		return self.y + self.h
 
+# AABB Collision.
 def CollideWorldRect(rect1: WorldRect, rect2: WorldRect):
 	# Determine if a collision is happening
 	if (
-		rect1.x < rect2.x + rect2.w and
-		rect1.x + rect1.w > rect2.x and
-		rect1.y < rect2.y + rect2.h and
-		rect1.h + rect1.y > rect2.y
+		rect1.left() < rect2.right() and
+		rect1.right() > rect2.left() and
+		rect1.top() < rect2.bottom() and
+		rect1.bottom() > rect2.top()
 	):
 		# OK. collision is happening, which side is closest?
 		side = {
@@ -43,14 +48,15 @@ def CollideWorldRect(rect1: WorldRect, rect2: WorldRect):
 		for i in side.keys():
 			if side[i] < side[closest]:
 				closest = i
-		print(closest)
 		return closest, rect2
 
 	return None, None
 
 class Player(pg.sprite.Sprite):
-	def __init__(self, screen):
+	def __init__(self, screen, netplayer):
 		pg.sprite.Sprite.__init__(self)
+		self.netplayer = netplayer
+
 		self.surf = pg.Surface((20, 20))
 		self.rect = self.surf.get_rect()
 		self.rect.center = screen.rect.center
@@ -67,16 +73,17 @@ class Player(pg.sprite.Sprite):
 		self.air = 0
 
 	def update(self, screen, group, input):
-		key = {"left": 97, "up": 119, "down": 115, "right": 100}
-		Dir = {"x": 0, "y": 0}
-		if pg.key.get_pressed()[key["left"]]:
-			Dir["x"] = -1
-		if pg.key.get_pressed()[key["right"]]:
-			Dir["x"] = 1
-		if pg.key.get_pressed()[key["up"]]:
-			Dir["y"] = -1
-		if pg.key.get_pressed()[key["down"]]:
-			Dir["y"] = 1
+		if not self.netplayer:
+			key = {"left": 97, "up": 119, "down": 115, "right": 100}
+			Dir = {"x": 0, "y": 0}
+			if pg.key.get_pressed()[key["left"]]:
+				Dir["x"] = -1
+			if pg.key.get_pressed()[key["right"]]:
+				Dir["x"] = 1
+			if pg.key.get_pressed()[key["up"]]:
+				Dir["y"] = -1
+			if pg.key.get_pressed()[key["down"]]:
+				Dir["y"] = 1
 
 		# Friction
 		self.velocity["x"] *= .96
@@ -109,23 +116,22 @@ class Player(pg.sprite.Sprite):
 		# self.velocity["y"] = clamp(self.velocity["y"] + (1 / 60)/2, -15, 15)
 
 		# Calculate next position.
-		newloc = self.location
+		newloc = copy.copy(self.location)
 		newloc.x, newloc.y  = (
 			self.location.x + (self.velocity["x"]),
 			self.location.y + (self.velocity["y"])
 		)
+		# print(newloc.y - self.location.y, group["world"])
 
 		self.floored = False
 		for i in group["world"]:
+			# print(newloc.y, self.location.y)
 			closest, rect2 = CollideWorldRect(newloc, i.location)
 			if closest is not None:
-				print("BRUUUUUH")
 				if closest == "top":
-					print(newloc.y)
 					newloc.y = rect2.y - newloc.h
 					self.velocity["y"] = 0
 					self.floored = True
-					print(newloc.y)
 
 				elif closest == "bottom":
 					newloc.y = rect2.bottom()
@@ -140,21 +146,17 @@ class Player(pg.sprite.Sprite):
 					self.velocity["x"] = 0
 
 		# Move to calculated new position
-
 		self.location = newloc
-		self.rect[0], self.rect[1] = ToWorld(screen.location, self.location.xy())
+
+		if not self.netplayer:
+			# Update camera location
+			screen.location = (
+				-self.location.x + screen.rect.center[0],
+				-self.location.y + screen.rect.center[1]
+			)
 
 
-		# Update camera location
-		pg.display.set_caption(str(screen.location))
-		screen.location = (
-			-newloc.x + screen.rect.center[0],
-			-newloc.y + screen.rect.center[1]
-		)
-		# print(geometry.collide())
-
-
-def ToWorld(a, b):
+def SumTup(a, b):
 	return (
 		a[0] + b[0],
 		a[1] + b[1]
@@ -168,15 +170,26 @@ class Tile(pg.sprite.Sprite):
 		self.location = WorldRect(loc, self.rect)
 
 	def update(self, screen, group, input):
+		pass
 		# print(self.rect)
-		self.rect[0], self.rect[1] = ToWorld(screen.location, self.location.xy())
+		# self.rect[0], self.rect[1] = ToWorld(screen.location, self.location.xy())
 		# print(self.location, group["player"][0].location, screen.location)
 
 class Game:
-	def __init__(self, screen):
+	def __init__(self, screen, Forclient):
+		if not Forclient:
+			self.server = server.Server()
+		self.net = client.Network()
+		import socket
+		self.net.connect((socket.gethostname(), 5058))
+
+
 		self.group = {}
 		self.group["player"] = []
-		self.group["player"].append(Player(screen))
+		self.group["player"].append(Player(screen, False))
+
+		self.group["netplayer"] = []
+
 		self.group["entity"] = []
 
 
@@ -184,14 +197,23 @@ class Game:
 		self.group["world"] = []
 		# self.group["world"].append(Tile((100, 100), (0,0)))
 		self.group["world"].append(Tile((100, 100), (100, 100)))
-		# self.group["world"].append(Tile((100, 100), (100, 300)))
-		# self.group["world"].append(Tile((100, 100), (300, 300)))
+		self.group["world"].append(Tile((100, 100), (100, 300)))
+		self.group["world"].append(Tile((100, 100), (300, 300)))
 
 
 
 	def update(self, screen, group, input):
+		print(self.net.response)
 		screen.surf.fill([121, 100, 100])
 		for e in self.group.values():
 			for obj in e:
 				act = obj.update(screen, self.group, input)
-				screen.surf.blit(obj.surf, obj.rect)
+
+				screen.surf.blit(
+					obj.surf,
+					SumTup(screen.location, obj.location.xy())
+				)
+		p = self.group["player"][0]
+		self.net.send(
+			{"player": {0: {"location": p.location.xy()}}}
+		)

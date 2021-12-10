@@ -43,10 +43,10 @@ class Network:
                 data = json.loads(
                     self.client.recv(4096).decode()
                 )
-                print(data)
+                # print(data)
                 self.response.append(data) # add response to the list of responses that need to be processed.
             except Exception as e:
-                print(e)
+                print("Exception: ", e)
                 break
 
     def send(self, data: dict):

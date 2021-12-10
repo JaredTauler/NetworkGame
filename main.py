@@ -52,6 +52,7 @@ class ClassEventHandle():
 pg.init()
 
 SCREEN = pg.display.set_mode((1200, 800))
+SCREEN2 = pg.display.set_mode((1200, 800))
 CLOCK = pg.time.Clock()
 
 GROUP = {}
@@ -62,9 +63,9 @@ PLAYAREA = [ClassPlayArea((800, 800))]
 INPUT = ClassEventHandle()
 
 # Initial GUI menu.
-# GROUP[0] = gui.MainMenu(PLAYAREA[0])
+GROUP[0] = gui.MainMenu(PLAYAREA[0])
 
-GROUP[0] = game.Game(PLAYAREA[0])
+# GROUP[0] = game.Game(PLAYAREA[0])
 while True:
     # Update Everything.
     for obj in GROUP.values():

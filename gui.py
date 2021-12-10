@@ -3,6 +3,7 @@ import pygame as pg
 import pygame.font as pgfont
 from function import *
 import math
+import game
 
 def SurfCenter(s1, s2):
     return (
@@ -137,8 +138,13 @@ class MainMenu:
         for e in self.elem.values():
             act = e.update(screen, Input)
             if act != None:
-                if act == "join":
-                    group["gui"][0] = JoinMenu(screen) # replace self with join menu
+                # Host game.
+                if act == "host":
+                    # Replace self with a new game instance, passing in the screen.
+                    group[0] = game.Game(screen, False)
+                    return
+                elif act == "join":
+                    group[0] = game.Game(screen, True) # replace self with join menu
                     return
 
 class JoinMenu:
