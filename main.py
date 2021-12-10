@@ -73,7 +73,7 @@ while True:
 
     SCREEN.blit(PLAYAREA[0].surf, (0,0))
 
-    # pg.display.set_caption(str(CLOCK.get_fps()))
+    pg.display.set_caption(str(CLOCK.get_fps()))
     pg.display.update()
     CLOCK.tick(60)
 

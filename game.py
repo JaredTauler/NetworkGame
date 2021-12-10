@@ -188,8 +188,6 @@ class Game:
 		self.group["player"] = []
 		self.group["player"].append(Player(screen, False))
 
-		self.group["netplayer"] = []
-
 		self.group["entity"] = []
 
 
@@ -203,17 +201,44 @@ class Game:
 
 
 	def update(self, screen, group, input):
-		print(self.net.response)
+		# Made in such a way that new ticks can come in while this process is happening.
+		while self.net.response:
+			res = self.net.response[0]
+
+			id = res.get("id")
+			if id:
+				self.client_id = id
+				print("Client ID set to " + str(id))
+
+			else:
+				for client_id in self.net.response[0]: # For each client tick list
+					ticklist = self.net.response[0].get(client_id)
+					for tick in ticklist:
+						# print(type(tick))
+						# FIXME
+						for player in tick.get("netplayer"):
+							if not self.group[client_id]:
+								self.group[client_id] = []
+							if not self.group[client_id][0]:
+								self.group[client_id][0] = Player(screen, True)
+							print(client_id, tick.get("netplayer")[player])
+
+			self.net.response.pop(0)  # Tick has been processed, remove it from the list
+
 		screen.surf.fill([121, 100, 100])
 		for e in self.group.values():
-			for obj in e:
-				act = obj.update(screen, self.group, input)
+			for tick in e:
+				act = tick.update(screen, self.group, input)
 
 				screen.surf.blit(
-					obj.surf,
-					SumTup(screen.location, obj.location.xy())
+					tick.surf,
+					SumTup(screen.location, tick.location.xy())
 				)
-		p = self.group["player"][0]
+
+		data = {}
+		for i, p in enumerate(self.group["player"]):
+			pdata = {"location": p.location.xy()}
+			data["netplayer"] = {i: pdata}
 		self.net.send(
-			{"player": {0: {"location": p.location.xy()}}}
+			data
 		)

@@ -7,49 +7,64 @@ class Server():
     def __init__(self):
         server = socket.gethostname()
         port = 5058
+        self.client_id = 21
 
 
-        self.s = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+        self.client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
-            self.s.bind((server, port))
+            self.client.bind((server, port))
         except socket.error as e:
             str(e)
 
-        self.s.listen(2)
+        self.client.listen(2)
 
         print("Waiting for a connection, Server Started")
 
         connected = set()
-        self.client = {}
+        self.listeners = []
+        self.response = {}
 
         start_new_thread(self.listen_new_connection, ())
 
     def listen_new_connection(self):
         # Listen for new connections.
         while True:
-            conn, addr = self.s.accept()
+            conn, addr = self.client.accept() # Accept
+
+            id = self.client_id # Get new ID
+            self.client_id += 1
+
+            conn.send(str.encode(json.dumps({"id": id}))) # Give joined player their ID
+
             print("Connected to:", addr)
+            start_new_thread(self.listener, (conn, id))
 
-            p = addr
-            gameId = 0
-            self.client[start_new_thread(self.listener, (conn, p, gameId))] = 0
-
-
-    def listener(self,conn, p, gameId):
-        reply = ""
+    def listener(self,conn, id):
+        self.response[id] = {}
         while True:
-            try:
-                data = conn.recv(4096).decode()
-                # conn.send(str.encode(data))
+            # try:
+                # Receive data from client
+                data = json.loads(
+                    conn.recv(4096).decode()
+                )
+                # Add newfound data to everybodies reponse list, except for mine.
+                for i in self.response:
+                    if i == id: continue
+                    else:
+                        # If a tick list for me doesnt exist in set client, create it
+                        if not self.response[i].get(id):
+                            self.response[i][id] = []
+                        # append tick to ticklist
+                        self.response[i][id].append(data)
 
-            except Exception as e:
-                print("Exception:", e)
-                break
+                # Now to send my response dict to my client,
+                res = self.response[id]
+                self.response[id] = {} # Clear my doct.
+
+                conn.send(str.encode(json.dumps(res)))
+            # except Exception as e:
+            #     print("Exception:", e)
+            #     break
         print("Lost connection")
-        try:
-            del self.client[gameId]
-            print("Disconnected", gameId)
-        except:
-            pass
         conn.close()
 
