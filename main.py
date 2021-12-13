@@ -51,8 +51,8 @@ class ClassEventHandle():
 
 pg.init()
 
-SCREEN = pg.display.set_mode((1200, 800))
-SCREEN2 = pg.display.set_mode((1200, 800))
+SCREEN = pg.display.set_mode((800, 800))
+# SCREEN2 = pg.display.set_mode((1200, 800))
 CLOCK = pg.time.Clock()
 
 GROUP = {}
@@ -73,7 +73,6 @@ while True:
 
     SCREEN.blit(PLAYAREA[0].surf, (0,0))
 
-    pg.display.set_caption(str(CLOCK.get_fps()))
     pg.display.update()
     CLOCK.tick(60)
 

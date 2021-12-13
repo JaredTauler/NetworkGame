@@ -38,15 +38,15 @@ class Network:
     def listener(self):
         # print("Listening to " + str(addr))
         print("listening")
+        res = "no data"
         while True:
             try:
-                data = json.loads(
-                    self.client.recv(4096).decode()
-                )
-                self.response.append(data) # add response to the list of responses that need to be processed.
+                res = self.client.recv(4096).decode()
+                data = json.loads(res)
+                self.response.append(data)  # add response to the list of responses that need to be processed.
             except Exception as e:
-                print("Exception: ", e)
-                break
+                print("CLIENT Error loading JSON: ", e, " Bad data",  res)
+
 
     def send(self, data: dict):
         self.client.send(str.encode(json.dumps(data)))

@@ -7,6 +7,8 @@ from function import *
 import math
 import copy
 
+from openpyxl import load_workbook
+
 class WorldRect():
 	def __init__(self, xy, wh):
 		self.x, self.y = copy.copy(xy)
@@ -14,6 +16,10 @@ class WorldRect():
 			self.w, self.h = copy.copy(wh.w), copy.copy(wh.h)
 		else:
 			self.w, self.h = wh
+
+	def set(self, iter):
+		self.x = iter[0]
+		self.y = iter[1]
 
 	def xy(self):
 		return self.x, self.y
@@ -56,6 +62,8 @@ class Player(pg.sprite.Sprite):
 	def __init__(self, screen, netplayer):
 		pg.sprite.Sprite.__init__(self)
 		self.netplayer = netplayer
+		self.ticklist = []
+		self.dir = [0,0]
 
 		self.surf = pg.Surface((20, 20))
 		self.rect = self.surf.get_rect()
@@ -64,7 +72,7 @@ class Player(pg.sprite.Sprite):
 		pg.draw.rect(self.surf, (255, 0, 0), self.surf.get_rect())
 
 		self.location = WorldRect((100, -10),(self.rect))
-		self.velocity = {"x": 0, "y": 0}
+		self.velocity = [0,0]
 
 		self.jumping = False
 		self.jumpframes = 0
@@ -73,53 +81,61 @@ class Player(pg.sprite.Sprite):
 		self.air = 0
 
 	def update(self, screen, group, input):
+		self.dir = [0, 0]
+		while len(self.ticklist) != 0:
+			t = self.ticklist[0]
+			self.location.set(t["location"])
+			self.velocity = t["velocity"]
+			self.dir = t["dir"]
+			self.ticklist.pop(0)
+
+		key = {"left": 97, "up": 119, "down": 115, "right": 100}
 		if not self.netplayer:
-			key = {"left": 97, "up": 119, "down": 115, "right": 100}
-			Dir = {"x": 0, "y": 0}
 			if pg.key.get_pressed()[key["left"]]:
-				Dir["x"] = -1
+				self.dir[0] = -1
 			if pg.key.get_pressed()[key["right"]]:
-				Dir["x"] = 1
+				self.dir[0] = 1
 			if pg.key.get_pressed()[key["up"]]:
-				Dir["y"] = -1
+				self.dir[1] = -1
 			if pg.key.get_pressed()[key["down"]]:
-				Dir["y"] = 1
+				self.dir[1] = 1
 
 		# Friction
-		self.velocity["x"] *= .96
+		self.velocity[0] *= .96
 
 		# Will endlessly multiply little tiny floats that make the player move when they shouldnt be.
-		if round(self.velocity["x"], 1) == 0:
-			self.velocity["x"] = 0
+		if round(self.velocity[0], 1) == 0:
+			self.velocity[0] = 0
 
 		# Calculate Velocity and gravity
-		self.velocity["x"] = self.velocity["x"] + (Dir["x"] / 4)
-		self.velocity["y"] = self.velocity["y"] + (Dir["y"] / 4)
+		self.velocity[0] = self.velocity[0] + (self.dir[0] / 4)
+		self.velocity[1] = self.velocity[1] + (self.dir[1] / 4)
 
 		# # Jumping off ground
-		# if pg.key.get_pressed()[key["up"]] and self.floored:
-		# 	print("BRUH")
-		# 	self.jumping = True
-		# 	self.velocity["y"] = -1
-		# 	self.jumpframes = 0
-		# # Jumping while not touching the ground
-		# elif pg.key.get_pressed()[key["up"]] and self.jumpframes != self.jumpmax and self.jumping:
-		# 	self.velocity["y"] += -3*self.jumpframes
-		# 	self.jumpframes += 1
-		# # If falling
-		# else:
-		# 	# self.jumping = False
-		# 	self.velocity["y"] += 1
-		# 	self.air += 1
-		#
-		# # Apply velocity
-		# self.velocity["y"] = clamp(self.velocity["y"] + (1 / 60)/2, -15, 15)
+		if pg.key.get_pressed()[key["up"]] and self.floored:
+			self.jumping = True
+			self.velocity[1] = -1
+			self.jumpframes = 0
+
+		# Jumping while not touching the ground
+		elif pg.key.get_pressed()[key["up"]] and self.jumpframes != self.jumpmax and self.jumping:
+			self.velocity[1] += -.5 *self.jumpframes
+			self.jumpframes += 1
+
+		# If falling
+		else:
+			# self.jumping = False
+			self.velocity[1] += 1
+			self.air += 1
+
+		# Apply velocity
+		self.velocity[1] = clamp(self.velocity[1], -15, 15)
 
 		# Calculate next position.
 		newloc = copy.copy(self.location)
 		newloc.x, newloc.y  = (
-			self.location.x + (self.velocity["x"]),
-			self.location.y + (self.velocity["y"])
+			self.location.x + (self.velocity[0]),
+			self.location.y + (self.velocity[1])
 		)
 		# print(newloc.y - self.location.y, group["world"])
 
@@ -130,20 +146,20 @@ class Player(pg.sprite.Sprite):
 			if closest is not None:
 				if closest == "top":
 					newloc.y = rect2.y - newloc.h
-					self.velocity["y"] = 0
+					self.velocity[1] = 0
 					self.floored = True
 
 				elif closest == "bottom":
 					newloc.y = rect2.bottom()
-					self.velocity["y"] = 0
+					self.velocity[1] = 0
 
 
 				elif closest == "left":
 					newloc.x = rect2.x - newloc.w
-					self.velocity["x"] = 0
+					self.velocity[0] = 0
 				elif closest == "right":
 					newloc.x = rect2.x + rect2.h
-					self.velocity["x"] = 0
+					self.velocity[0] = 0
 
 		# Move to calculated new position
 		self.location = newloc
@@ -171,17 +187,20 @@ class Tile(pg.sprite.Sprite):
 
 	def update(self, screen, group, input):
 		pass
-		# print(self.rect)
-		# self.rect[0], self.rect[1] = ToWorld(screen.location, self.location.xy())
-		# print(self.location, group["player"][0].location, screen.location)
+
 
 class Game:
 	def __init__(self, screen, Forclient):
 		if not Forclient:
+			pg.display.set_caption(str("SERVER"))
 			self.server = server.Server()
+		else:
+			pg.display.set_caption(str("CLIENT"))
 		self.net = client.Network()
 		import socket
-		self.net.connect((socket.gethostname(), 5058))
+		self.net.connect((socket.gethostname(), 5059))
+
+		self.lastresponse = None
 
 
 		self.group = {}
@@ -193,20 +212,29 @@ class Game:
 
 
 		self.group["world"] = []
-		# self.group["world"].append(Tile((100, 100), (0,0)))
-		self.group["world"].append(Tile((100, 100), (100, 100)))
-		self.group["world"].append(Tile((100, 100), (100, 300)))
-		self.group["world"].append(Tile((100, 100), (300, 300)))
 
+		self.LoadMap()
+
+	def LoadMap(self):
+		loc = ("map.xlsx")
+
+		wb = load_workbook(loc)
+		ws = wb.active
+		for row in range(0, ws.max_row):
+			for i, col in enumerate(ws.iter_cols(1, ws.max_column)):
+				if col[row].value == 1:
+					self.group["world"].append(Tile((100, 100), (i*100, row*100)))
 
 
 	def update(self, screen, group, input):
+		if self.net.response != []: print(self.net.response)
 		# Made in such a way that new ticks can come in while this process is happening.
 		while self.net.response:
 			res = self.net.response[0]
+			print(res)
 
-			id = res.get("id")
-			if id:
+			if res.get("id"):
+				id = res.get("id")
 				self.client_id = id
 				print("Client ID set to " + str(id))
 
@@ -214,14 +242,18 @@ class Game:
 				for client_id in self.net.response[0]: # For each client tick list
 					ticklist = self.net.response[0].get(client_id)
 					for tick in ticklist:
-						# print(type(tick))
-						# FIXME
 						for player in tick.get("netplayer"):
-							if not self.group[client_id]:
+							print("Moving Netplayer")
+							# Create netplayer
+							if not self.group.get(client_id):
 								self.group[client_id] = []
-							if not self.group[client_id][0]:
-								self.group[client_id][0] = Player(screen, True)
-							print(client_id, tick.get("netplayer")[player])
+							if len(self.group.get(client_id)) == 0:
+								self.group[client_id].append(Player(screen, True))
+							# Pass tickdata to said netplayer for processing
+							self.group[client_id][0].ticklist.append(
+								tick.get("netplayer")[player]
+							)
+
 
 			self.net.response.pop(0)  # Tick has been processed, remove it from the list
 
@@ -237,8 +269,9 @@ class Game:
 
 		data = {}
 		for i, p in enumerate(self.group["player"]):
-			pdata = {"location": p.location.xy()}
+			pdata = {"location": p.location.xy(), "velocity": p.velocity, "dir": p.dir}
 			data["netplayer"] = {i: pdata}
-		self.net.send(
-			data
-		)
+
+		if self.lastresponse != data:
+			self.net.send(data)
+		self.lastresponse = data
