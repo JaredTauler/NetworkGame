@@ -21,6 +21,7 @@ class Network:
         )
         for i in re.findall(p, str.decode()):
             try:
+                print(i, port)
                 self.client.connect((i, port))
             except:
                 pass
@@ -43,6 +44,7 @@ class Network:
             try:
                 res = self.client.recv(4096).decode()
                 data = json.loads(res)
+                # print("DATA: ", data.get("netplayer"))
                 self.response.append(data)  # add response to the list of responses that need to be processed.
             except Exception as e:
                 print("CLIENT Error loading JSON: ", e, " Bad data",  res)

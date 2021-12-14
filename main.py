@@ -13,10 +13,10 @@ from pygame.locals import (
 )
 
 class ClassPlayArea():
-    def __init__(self, surfsize):
+    def __init__(self, surfsize, loc):
         self.surf = pg.Surface(surfsize)
         self.rect = self.surf.get_rect()
-        self.location = (0,0)
+        self.location = loc
 
 
 class ClassEventHandle():
@@ -58,13 +58,12 @@ CLOCK = pg.time.Clock()
 GROUP = {}
 
 
-PLAYAREA = [ClassPlayArea((800, 800))]
+PLAYAREA = [ClassPlayArea((800, 800), (0,0))]
 
 INPUT = ClassEventHandle()
 
 # Initial GUI menu.
 GROUP[0] = gui.MainMenu(PLAYAREA[0])
-
 # GROUP[0] = game.Game(PLAYAREA[0])
 while True:
     # Update Everything.
