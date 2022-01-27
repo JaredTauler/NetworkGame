@@ -33,11 +33,12 @@ class WorldRect():
 	def bottom(self):
 		return self.y + self.h
 
-def SumTup(a, b):
-	return (
-		a[0] + b[0],
-		a[1] + b[1]
-	)
+def SumTup(*a):
+	x = [0,0]
+	for i in a:
+		x[0] += i[0]
+		x[1] += i[1]
+	return x
 
 # AABB Collision.
 def CollideWorldRect(rect1: WorldRect, rect2: WorldRect):

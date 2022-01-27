@@ -45,7 +45,6 @@ class Server():
                 c = self.clients[id]
                 # Return everything except own client's stuff
                 notmydata = lambda data, id: [{i: data[i]} for i in data if i != id]
-                # print("DATAAAA", notmydata(data, id))
                 # Send data
                 c.conn.send(
                     str.encode(

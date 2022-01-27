@@ -64,14 +64,17 @@ INPUT = ClassEventHandle()
 
 # Initial GUI menu.
 GROUP[0] = gui.MainMenu(PLAYAREA[0])
-# GROUP[0] = game.Game(PLAYAREA[0])
 while True:
     # Update Everything.
     for obj in GROUP.values():
         obj.update(PLAYAREA[0], GROUP, INPUT.update())
 
     SCREEN.blit(PLAYAREA[0].surf, (0,0))
+    pg.display.set_caption(str(CLOCK.get_fps()))
 
     pg.display.update()
-    CLOCK.tick(60)
+    if pg.key.get_pressed()[32]:
+        CLOCK.tick(5)
+    else:
+        CLOCK.tick(60)
 
