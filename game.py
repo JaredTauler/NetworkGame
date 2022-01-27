@@ -26,9 +26,9 @@ class Player(pg.sprite.Sprite):
 
 		# pm
 		self.body = pm.Body()
-		self.body.position = (0,0)
-		self.shape = pm.Poly.create_box(self.body, (20,20))
-		self.shape.density = 1
+		self.body.position = (100,100)
+		self.shape = pm.Poly.create_box(self.body, (30,30))
+		self.shape.density = 10
 		self.shape.elasticity = 1
 		space.add(self.body, self.shape)
 		self.shape.collision_type = 1
@@ -40,122 +40,29 @@ class Player(pg.sprite.Sprite):
 
 		pg.draw.rect(self.surf, (255, 0, 0), self.surf.get_rect())
 
-		# self.location = WorldRect((100, -m), (self.rect))
-		# self.velocity = [0, 0]
-		#
-		# self.jumping = False
-		# self.jumpframes = 0
-		# self.jumpmax = 20
-		# self.floored = False
-		# self.air = 0
 
 	def update(self, screen, group, input, space):
-		print(self.body.position)
-		# self.dir = [0, 0]
-		# while len(self.ticklist) != 0:
-		# 	t = self.ticklist[0]
-		# 	self.location.set(t["location"])
-		# 	self.velocity = t["velocity"]
-		# 	self.dir = t["dir"]
-		# 	self.ticklist.pop(0)
-		#
+
+		while len(self.ticklist) != 0:
+			t = self.ticklist[0]
+			self.body.position = t["location"]
+			self.body.velocity = t["velocity"]
+			self.ticklist.pop(0)
+			print("BRUH")
+
 		key = {"left": 97, "up": 119, "down": 115, "right": 100}
+		dir = [0,0]
 		if not self.netplayer:
 			if pg.key.get_pressed()[key["left"]]:
-				self.body.velocity = (-5, 0)
+				dir = SumTup(dir, (-1, 0))
 			if pg.key.get_pressed()[key["right"]]:
-				self.body.velocity = (5, 0)
+				dir = SumTup(dir, (1, 0))
 			if pg.key.get_pressed()[key["up"]]:
-				self.body.velocity = (0, -5)
+				dir = SumTup(dir, (0, -1))
 			if pg.key.get_pressed()[key["down"]]:
-				self.body.velocity = (0, 5)
-		#
-		# # Friction
-		# self.velocity[0] *= .96
-		#
-		# # Will endlessly multiply little tiny floats that make the player move when they shouldnt be.
-		# if round(self.velocity[0], 1) == 0:
-		# 	self.velocity[0] = 0
-		#
-		# # Calculate Velocity and gravity
-		# self.velocity[0] = self.velocity[0] + (self.dir[0] / 4)
-		# self.velocity[1] = self.velocity[1] + (self.dir[1] / 4)
-		#
-		# # # Jumping off ground
-		# if not self.netplayer:
-		# 	if pg.key.get_pressed()[key["up"]] and self.floored:
-		# 		self.jumping = True
-		# 		self.velocity[1] = -1
-		# 		self.jumpframes = 0
-		#
-		# 	# Jumping while not touching the ground
-		# 	elif pg.key.get_pressed()[key["up"]] and self.jumpframes != self.jumpmax and self.jumping:
-		# 		self.velocity[1] += -.5 * self.jumpframes
-		# 		self.jumpframes += 1
-		#
-		# 	# If falling
-		# 	else:
-		# 		# self.jumping = False
-		# 		self.velocity[1] += 1
-		# 		self.air += 1
-		#
-		# 	# Apply velocity
-		# 	self.velocity[1] = clamp(self.velocity[1], -15, 15)
-		#
-		# # Calculate next position.
-		# newloc = copy.copy(self.location)
-		# newloc.x, newloc.y = (
-		# 	self.location.x + (self.velocity[0]),
-		# 	self.location.y + (self.velocity[1])
-		# )
-		# # print(newloc.y - self.location.y, group["world"])
-		#
-		# self.floored = False
-		# hit = {}
-		# # Check collision against collidable objects.
-		# for i in group["world"]:
-		# 	closest, rect2 = CollideWorldRect(newloc, i.location)
-		# 	if closest is not None:  # If colliding
-		# 		if not hit.get(closest): hit[closest] = []
-		# 		hit[closest].append(
-		# 			(i, rect2)
-		# 		)
-		#
-		# # A ton of for loops but each only dealing with 1 or 2 objects.
-		# if hit.get("top"):
-		# 	for obj in hit["top"]:
-		# 		# This is to solve problem where player would get stuck on flat surfaces made of multipl tiles.
-		# 		if len(hit) >= 2:  # If other sides were hit on other objects
-		# 			for list in hit:
-		# 				if list == "top": continue
-		# 				for i, obj2 in enumerate(hit[list]):
-		# 					a = lambda a: a[0].location.y  # For readability.
-		# 					if a(obj) == a(obj2):  # If they have the same Y value BUT are in diff lists
-		# 						hit[list].pop(i)  # Ignore the collision
-		#
-		# 		newloc.y = obj[1].y - newloc.h
-		# 		self.velocity[1] = 0
-		# 		self.floored = True
-		#
-		# if hit.get("bottom"):
-		# 	for obj in hit["bottom"]:
-		# 		newloc.y = obj[1].bottom()
-		# 		self.velocity[1] = 0
-		#
-		# if hit.get("left"):
-		# 	for obj in hit["left"]:
-		# 		# if self.velocity[0] > 0: # Check if moving towards side too. Will get stuck on corners if else.
-		# 		newloc.x = obj[1].x - newloc.w
-		# 		self.velocity[0] = 0
-		#
-		# if hit.get("right"):
-		# 	for obj in hit["right"]:
-		# 		# if self.velocity[0] < 0:
-		# 		newloc.x = obj[1].x + obj[1].h
-		# 		self.velocity[0] = 0
-		#
-		# # Move to calculated new position
-		# self.location = newloc
+				dir = SumTup(dir, (0, 1))
+		mvspd = .2
+		self.body.velocity = SumTup((dir[0]*mvspd, dir[1]*mvspd), self.body.velocity)
 
 		if not self.netplayer:
 			# Update camera location
@@ -163,11 +70,6 @@ class Player(pg.sprite.Sprite):
 				-self.body.position.x + screen.rect.center[0],
 				-self.body.position.y + screen.rect.center[1]
 			)
-			
-	def draw(self):
-		return self.surf
-		# surf = pg.Surface((20, 20))
-		# pygame.draw.rect(surf, (255,255,255), self.shape.)
 
 class Tile(pg.sprite.Sprite):
 	def __init__(self, size, loc, space):
@@ -189,9 +91,6 @@ class Tile(pg.sprite.Sprite):
 	def update(self, screen, group, input, space):
 		pass
 
-	def draw(self):
-		return self.surf
-
 class Game:
 	def __init__(self, screen, Forclient):
 		if not Forclient:
@@ -206,7 +105,7 @@ class Game:
 		self.lastresponse = None
 
 		self.space = pm.Space()  # PyMunk simulation
-
+		self.space.gravity = (0, .1)
 		self.group = {}
 		self.group["player"] = []
 		self.group["player"].append(Player(screen, False, self.space))
@@ -231,37 +130,37 @@ class Game:
 
 
 	def update(self, screen, group, input):
-		# if self.net.response != []: print(self.net.response)
-		# # Made in such a way that new ticks can come in while this process is happening.
-		# while self.net.response:
-		# 	for res in self.net.response[0]: # First response in list of responses
-		# 		for client_id in res: # Process each computers info seperate
-		# 			# Finally processing ticks.
-		# 			for tick in res[client_id]:
-		# 				print(tick)
-		# 				if type(tick) is str:
-		# 					tick = json.loads(tick)
-		# 				if client_id == "0":
-		# 					if res.get("id"):
-		# 						id = res.get("id")
-		# 						self.client_id = id
-		# 						print("Client ID set to " + str(id))
-		# 				else:
-		# 					for player in tick.get("netplayer"): # If client has more than 1 player
-		# 						print("Moving Netplayer")
-		# 						# Create netplayer
-		# 						if not self.group.get(client_id):
-		# 							self.group[client_id] = []
-		# 						if len(self.group.get(client_id)) == 0:
-		# 							self.group[client_id].append(Player(screen, True))
-		# 						# Pass tickdata to said netplayer for processing
-		# 						self.group[client_id][0].ticklist.append(
-		# 							tick.get("netplayer")[player]
-		# 						)
+		if self.net.response != []: print(self.net.response)
+		# Made in such a way that new ticks can come in while this process is happening.
+		while self.net.response:
+			for res in self.net.response[0]: # First response in list of responses
+				for client_id in res: # Process each computers info seperate
+					# Finally processing ticks.
+					for tick in res[client_id]:
+						print(tick)
+						if type(tick) is str:
+							tick = json.loads(tick)
+						if client_id == "0":
+							if res.get("id"):
+								id = res.get("id")
+								self.client_id = id
+								print("Client ID set to " + str(id))
+						else:
+							for player in tick.get("netplayer"): # If client has more than 1 player
+								print("Moving Netplayer")
+								# Create netplayer
+								if not self.group.get(client_id):
+									self.group[client_id] = []
+								if len(self.group.get(client_id)) == 0:
+									self.group[client_id].append(Player(screen, True, self.space))
+								# Pass tickdata to said netplayer for processing
+								self.group[client_id][0].ticklist.append(
+									tick.get("netplayer")[player]
+								)
 
-			# self.net.response.pop(0)  # Tick has been processed, remove it from the list
+			self.net.response.pop(0)  # Tick has been processed, remove it from the list
 
-		# Step pm sim
+		# Step pymunk sim
 		self.space.step(1)
 
 		screen.surf.fill([121, 100, 100])
@@ -270,19 +169,23 @@ class Game:
 			for tick in e:
 				act = tick.update(screen, self.group, input, self.space)
 
-				screen.surf.blit(
-					tick.draw(),
-					# tick.body.position
-					SumTup(screen.location, tick.body.position)
-				)
+				def draw_poly(shape):
+					verts = []
+					for v in shape.get_vertices():
+						a = SumTup(screen.location, shape.body.position)
+						x = v.rotated(shape.body.angle)[0] + a[0]
+						y = v.rotated(shape.body.angle)[1] + a[1]
+						verts.append((x, y))
+					pygame.draw.polygon(screen.surf, [255, 255, 255], verts)
+				draw_poly(tick.shape)
 
-		# # Send data to server
-		# data = {}
-		# for i, p in enumerate(self.group["player"]):
-		# 	pdata = {"location": p.location.xy(), "velocity": p.velocity, "dir": p.dir}
-		# 	data["netplayer"] = {i: pdata}
-		#
-		# # Dont send if already sent same data last time.
-		# if self.lastresponse != data:
-		# 	self.net.send(data)
-		# self.lastresponse = data
+		# Send data to server
+		data = {}
+		for i, p in enumerate(self.group["player"]):
+			pdata = {"location": p.body.position, "velocity": p.body.velocity}
+			data["netplayer"] = {i: pdata}
+
+		# Dont send if already sent same data last time.
+		if self.lastresponse != data:
+			self.net.send(data)
+		self.lastresponse = data
