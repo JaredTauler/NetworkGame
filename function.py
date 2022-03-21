@@ -12,11 +12,11 @@ def RangeChange(Old, New, val):
 
 class WorldRect():
 	def __init__(self, xy, wh):
-		self.x, self.y = copy.copy(xy)
+		self.x, self.y = xy
 		if type(wh) is pg.Rect:
-			self.w, self.h = copy.copy(wh.w), copy.copy(wh.h)
+			self.w, self.h = wh.w, wh.h
 		else:
-			self.w, self.h = wh
+			self.w, self.h = wh.w
 
 	def set(self, iter):
 		self.x = iter[0]
@@ -39,6 +39,44 @@ def SumTup(*a):
 		x[0] += i[0]
 		x[1] += i[1]
 	return x
+
+def DifTup(*a):
+	x = [0,0]
+	for i in a:
+		x[0] -= i[0]
+		x[1] -= i[1]
+	return x
+# this is going to happen thousands of times a frame and needs to be quick
+
+left = lambda rect: rect[0][0]
+right = lambda rect: rect[0][0] + rect[1][0]
+top = lambda rect: rect[0][1]
+bottom = lambda rect: rect[0][1] + rect[1][1]
+def overlap(rect1, rect2):
+	return (
+		left(rect1) < right(rect2) and
+		right(rect1) > left(rect2) and
+		top(rect1) < bottom(rect2) and
+		bottom(rect1) > top(rect2)
+	)
+
+
+def rot_center(image, angle, x, y):
+	rotated_image = pg.transform.rotate(image, angle)
+	new_rect = rotated_image.get_rect(center=image.get_rect(center=(x, y)).center)
+
+	return rotated_image, new_rect
+
+def verts(shape, screen):
+	verts = []
+	for v in shape.get_vertices():
+		n = SumTup(
+			v.rotated(shape.body.angle),
+			screen.location,
+			shape.body.position
+		)
+		verts.append(n)
+	return verts
 
 # AABB Collision.
 def CollideWorldRect(rect1: WorldRect, rect2: WorldRect):
