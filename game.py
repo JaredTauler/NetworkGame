@@ -118,7 +118,14 @@ class Player():
 				-self.body.position.y + screen.rect.center[1]
 			)
 
-		pg.draw.polygon(screen.surf, [255, 0, 0], verts(self.shape, screen))
+		# pg.draw.polygon(screen.surf, [255, 0, 0], verts(self.shape, screen))
+		x = int(self.shape.body.position[0] + screen.location[0])
+		y = int(self.shape.body.position[1] + screen.location[1])
+		pygame.draw.rect(
+			screen.surf,
+			[255, 255, 255],
+			(x, y, 30, 30)
+		)
 
 
 # Tiles
@@ -129,27 +136,44 @@ class TileLayer():
 		# self.surf = pg.Surface((10000, 10000))
 
 	def draw(self, screen, space):
+		# return
 		for tile in self.tiles:
-			if overlap(  # blit if screen is overlapping rectangle
-					(
-							(-screen.location[0], -screen.location[1]),
-							(screen.rect.w, screen.rect.h)
-					),
-					(tile.shape.body.position, (60, 60))
-			):
-				try:
-					# x = int(tile.shape.body.position[0] + screen.location[0])
-					# y = int(tile.shape.body.position[1] - screen.location[1])
-					x = int( +screen.location[0])
-					y = int( -screen.location[1])
-					gfx.textured_polygon(
-						screen.surf,
-						verts(tile.shape, screen),
-						self.tilemap[tile.textureid],
-						x, y
-					)
-				except:
-					pass
+			# if overlap(  # blit if screen is overlapping rectangle
+			# 		(
+			# 				(-screen.location[0], -screen.location[1]),
+			# 				(screen.rect.w, screen.rect.h)
+			# 		),
+			# 		(tile.shape.body.position, (60, 60))
+			# ):
+			# try:
+				x = int(tile.shape.body.position[0] + screen.location[0])
+				y = int(tile.shape.body.position[1] + screen.location[1])
+				# x = int( +screen.location[0])
+				# y = int( -screen.location[1])
+				# gfx.textured_polygon(
+				# 	screen.surf,
+				# 	verts(tile.shape, screen),
+				# 	self.tilemap[tile.textureid],
+				# 	x, y
+				# )
+				# gfx.polygon(
+				#
+				# )
+				# gfx.filled_polygon(
+				# 	screen.surf,
+				# 	verts(tile.shape, screen),
+				# 	[0, 0, 0]
+				# )
+				# print()
+				pygame.draw.rect(
+					screen.surf,
+					[255,255,255],
+					(x, y, 30, *30)
+				)
+				# print(verts(tile.shape, screen))
+				pass
+			# except:
+			# 	pass
 
 	def update(self, screen, group, input, space):
 		self.draw(screen, space)
@@ -289,15 +313,15 @@ class Game:
 		self.lastresponse = data
 
 	def update(self, screen, group, input):
-		self.processtick(screen) # Process ticks
+		# self.processtick(screen) # Process ticks
 		self.space.step(1) # Step pymunk sim
 
 
 		# Update entities
-		t.start()
+		# t.start()
 		for e in self.group.values():
 			for obj in e:
 				obj.update(screen, self.group, input, self.space)
-		t.stop()
+		# t.stop()
 
-		self.toserver()
+		# self.toserver()

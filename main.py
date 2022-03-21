@@ -17,6 +17,7 @@ class ClassPlayArea():
         self.surf = pg.Surface(surfsize)
         self.rect = self.surf.get_rect()
         self.location = loc
+        self.zoom = 2
 
 
 class ClassEventHandle():
@@ -51,14 +52,13 @@ class ClassEventHandle():
 
 pg.init()
 
-SCREEN = pg.display.set_mode((800, 800))
-# SCREEN2 = pg.display.set_mode((1200, 800))
+SCREEN = pg.display.set_mode((1200, 800),vsync=1)
 CLOCK = pg.time.Clock()
 
 GROUP = {}
 
 
-PLAYAREA = [ClassPlayArea((800, 800), (0,0))]
+PLAYAREA = [ClassPlayArea((1200, 800), (0,0))]
 
 INPUT = ClassEventHandle()
 
